@@ -1,32 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import ChatInterface from "../components/ChatInterface";
-import Sidebar from "../components/Sidebar";
+import { useEffect, useState } from "react";
+import { supabase } from "../utils/supabase";
+import { useRouter } from "next/navigation";
+import Sidebar from "../components/Sidebar"; // Import recuperado
+import ChatInterface from "../components/ChatInterface"; // Import recuperado
 
 export default function Home() {
-  // O estado do ID agora vive AQUI, no pai de todos
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      // Verifica se o usuário está logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login"); // Se não, manda pro login
+      } else {
+        setUserId(user.id);
+      }
+    };
+    checkUser();
+  }, []);
+
+  // Enquanto não carrega o usuário, não mostra nada (evita piscar)
+  if (!userId) return null;
 
   return (
     <div className="flex h-screen bg-[#FDFBF7]">
-      
-      {/* 1. Sidebar (Esquerda) */}
+      {/* Sidebar (Esquerda) */}
       <Sidebar 
-        selectedChatId={currentChatId}
-        onSelectChat={(id) => setCurrentChatId(id)}
-        onNewChat={() => setCurrentChatId(null)}
+          selectedChatId={currentChatId}
+            onSelectChat={(id: string) => setCurrentChatId(id)}
+            onNewChat={() => setCurrentChatId(null)}
+            userId={userId} // <--- Adicione esta linha!
       />
 
-      {/* 2. Área Principal (Direita) */}
+      {/* Área Principal (Direita) */}
       <main className="flex-1 flex flex-col h-screen">
-        {/* Passamos o ID para o chat saber o que carregar */}
         <ChatInterface 
-          activeChatId={currentChatId} 
-          onChatCreated={(newId) => setCurrentChatId(newId)}
+          activeChatId={currentChatId}
+          onChatCreated={(newId: string) => setCurrentChatId(newId)}
+          userId={userId} // <--- Passando o ID para o Chat!
         />
       </main>
-
     </div>
   );
 }

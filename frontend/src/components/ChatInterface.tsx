@@ -6,6 +6,7 @@ import { Send, User, Sparkles, BookOpen, Download, Info, ArrowRight, Lightbulb }
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from "jspdf";
 
+
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -15,6 +16,7 @@ type Message = {
 interface ChatProps {
   activeChatId: string | null;
   onChatCreated: (id: string) => void;
+  userId: string;
 }
 
 // --- CONFIGURAÇÃO DOS MODOS COM EXEMPLOS ---
@@ -56,7 +58,7 @@ const modosConfig = {
 
 type ModoKey = keyof typeof modosConfig;
 
-export default function ChatInterface({ activeChatId, onChatCreated }: ChatProps) {
+export default function ChatInterface({ activeChatId, onChatCreated, userId }: ChatProps) {
   // Começamos VAZIO para mostrar a tela de boas-vindas
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -117,7 +119,12 @@ export default function ChatInterface({ activeChatId, onChatCreated }: ChatProps
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/chat/message`, { message: textoFinal, chat_id: activeChatId, foco: foco });
+      const response = await axios.post(`${API_BASE_URL}/chat/message`, { 
+    message: textoFinal, 
+    chat_id: activeChatId, 
+    foco: foco,
+    user_id: userId // <--- Enviando para o Backend
+});
       const data = response.data;
       if (!activeChatId && data.chat_id) onChatCreated(data.chat_id);
       setMessages((prev) => [...prev, { role: "assistant", content: data.response, audioUrl: data.audio_url }]);

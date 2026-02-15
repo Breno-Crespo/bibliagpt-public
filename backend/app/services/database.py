@@ -4,69 +4,44 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-
-if not url or not key:
-    raise ValueError("❌ ERRO: SUPABASE_URL e SUPABASE_KEY são obrigatórios no .env")
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(url, key)
 
-def create_chat(title: str):
-    """Cria uma nova conversa e retorna o ID"""
-    try:
-        data = {"title": title}
-        response = supabase.table("chats").insert(data).execute()
-        # O supabase retorna uma lista, pegamos o primeiro item
-        return response.data[0]['id']
-    except Exception as e:
-        print(f"Erro ao criar chat: {e}")
-        return None
+def create_chat(title: str, user_id: str):
+    """Cria um novo chat vinculado ao usuário"""
+    data = {"title": title, "user_id": user_id}
+    response = supabase.table("chats").insert(data).execute()
+    return response.data[0]["id"]
 
-def save_message(chat_id: str, role: str, content: str):
-    """Salva uma mensagem no banco"""
-    try:
-        data = {
-            "chat_id": chat_id,
-            "role": role,
-            "content": content
-        }
-        supabase.table("messages").insert(data).execute()
-    except Exception as e:
-        print(f"Erro ao salvar mensagem: {e}")
+def save_message(chat_id: str, role: str, content: str, user_id: str, audio_url: str = None):
+    """Salva mensagem vinculada ao usuário"""
+    data = {
+        "chat_id": chat_id,
+        "role": role,
+        "content": content,
+        "user_id": user_id,  # Importante: Salva o dono da mensagem
+        "audio_url": audio_url
+    }
+    supabase.table("messages").insert(data).execute()
 
 def get_chat_history(chat_id: str):
-    """Recupera o histórico completo de um chat"""
-    try:
-        response = supabase.table("messages")\
-            .select("*")\
-            .eq("chat_id", chat_id)\
-            .order("created_at", desc=False)\
-            .execute()
-        return response.data
-    except Exception as e:
-        print(f"Erro ao buscar histórico: {e}")
+    response = supabase.table("messages").select("*").eq("chat_id", chat_id).order("created_at", desc=False).execute()
+    return response.data
+
+def get_all_chats(user_id: str):
+    """Busca APENAS os chats daquele usuário específico"""
+    if not user_id:
         return []
-    
-def get_all_chats():
-    """Retorna lista de todas as conversas (ID e Título)"""
-    try:
-        # Busca ID, Titulo e Data, ordenado pelo mais recente
-        response = supabase.table("chats")\
-            .select("id, title, created_at")\
-            .order("created_at", desc=True)\
-            .execute()
-        return response.data
-    except Exception as e:
-        print(f"Erro ao listar chats: {e}")
-        return []
+    # Filtra por user_id para garantir privacidade
+    response = supabase.table("chats").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+    return response.data
+
 def delete_chat_db(chat_id: str):
-    """Remove uma conversa e suas mensagens (Cascade)"""
     try:
-        # O Supabase já remove as mensagens automaticamente se configuramos CASCADE no SQL
-        # Mas garantimos deletando o chat pai.
         supabase.table("chats").delete().eq("id", chat_id).execute()
         return True
     except Exception as e:
-        print(f"Erro ao deletar chat: {e}")
+        print(f"Erro ao deletar: {e}")
         return False
