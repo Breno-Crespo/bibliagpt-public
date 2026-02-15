@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-dotenv
+langchain
+langchain-groq
+langchain-community
+duckduckgo-search
+supabase
+edge-tts
+gTTS
+requests
+pydantic
