@@ -6,5 +6,7 @@ supabase
 python-dotenv
 langchain-groq
 langchain-community
+langchain-huggingface
 pinecone-client
 duckduckgo-search
+sentence-transformers
