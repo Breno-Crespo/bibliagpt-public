@@ -1,8 +1,8 @@
-import os
 from functools import lru_cache
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
+from backend.app.core.config import settings
 
 # Configurações
 INDEX_NAME = "bibliagpt-index"
@@ -14,7 +14,7 @@ def get_embeddings():
     return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 def get_pinecone_client():
-    api_key = os.getenv("PINECONE_API_KEY")
+    api_key = settings.PINECONE_API_KEY
     if not api_key:
         print("🚨 ERRO: PINECONE_API_KEY não encontrada.")
         return None

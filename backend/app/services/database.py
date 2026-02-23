@@ -1,13 +1,6 @@
-import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
+from backend.app.core.deps import get_supabase
 
-load_dotenv()
-
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
-
-supabase: Client = create_client(url, key)
+supabase = get_supabase()
 
 def create_chat(title: str, user_id: str):
     """Cria um novo chat vinculado ao usuário"""

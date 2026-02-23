@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { MessageSquare, Plus, Trash2, LogOut } from "lucide-react";
-import { API_BASE_URL } from "../utils/api";
 import { supabase } from "../utils/supabase";
 import { useRouter } from "next/navigation";
+import { chatService } from "../services/chatService"; // ✅ Usando nosso serviço seguro
 
 type ChatItem = {
   id: string;
@@ -16,24 +15,24 @@ interface SidebarProps {
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
   selectedChatId: string | null;
-  userId: string; // <--- Recebendo o ID do usuário
+  userId: string; 
 }
 
-export default function Sidebar({ onSelectChat, onNewChat, selectedChatId, userId }: SidebarProps) {
+export default function Sidebar({ onSelectChat, onNewChat, selectedChatId }: SidebarProps) {
   const [chats, setChats] = useState<ChatItem[]>([]);
   const router = useRouter();
   
+  // ✅ Busca os chats assim que o componente carrega ou quando um novo é selecionado
   useEffect(() => {
-    if (userId) {
-      fetchChats();
-    }
-  }, [selectedChatId, userId]); // Recarrega se mudar o chat ou o usuário
+    fetchChats();
+  }, [selectedChatId]); 
 
   const fetchChats = async () => {
     try {
-      // Agora enviamos o user_id na URL
-      const response = await axios.get(`${API_BASE_URL}/chat/list?user_id=${userId}`);
-      setChats(response.data);
+      // ✅ Agora usamos o serviço que envia o TOKEN no cabeçalho
+      // O backend descobre quem é o usuário sozinho!
+      const data = await chatService.getChats();
+      setChats(data);
     } catch (error) {
       console.error("Erro ao buscar chats:", error);
     }
@@ -44,10 +43,12 @@ export default function Sidebar({ onSelectChat, onNewChat, selectedChatId, userI
     if (!confirm("Tem certeza que deseja apagar este estudo?")) return;
 
     try {
-      await axios.delete(`${API_BASE_URL}/chat/delete/${id}`);
+      // ✅ Usando o serviço seguro para deletar
+      await chatService.deleteChat(id);
       setChats(prev => prev.filter(chat => chat.id !== id));
       if (selectedChatId === id) onNewChat();
     } catch (error) {
+      console.error("Erro ao apagar conversa:", error);
       alert("Erro ao apagar conversa.");
     }
   };
