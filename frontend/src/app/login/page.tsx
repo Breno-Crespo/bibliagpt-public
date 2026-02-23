@@ -48,7 +48,7 @@ export default function Login() {
             <Sparkles size={32} className="text-[#C5A059]" />
           </div>
           <h1 className="text-2xl font-serif font-bold text-[#5C4033]">
-            {isSignUp ? "Criar Conta" : "Bem-vindo de volta"}
+            {isSignUp ? "Criar Conta" : "Bem-vindo"}
           </h1>
         </div>
 
