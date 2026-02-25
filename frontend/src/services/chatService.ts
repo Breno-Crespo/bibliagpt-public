@@ -21,7 +21,7 @@ const sendMessage = async (mensagem: string, chatId: string | null, foco: string
       chat_id: chatId,
       foco: foco
     },
-    auth
+    { ...auth, timeout: 120000 }
   );
   return response.data;
 };
