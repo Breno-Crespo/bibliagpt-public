@@ -1,39 +1,42 @@
-from functools import lru_cache
-from langchain_huggingface import HuggingFaceEmbeddings
+import os
+from dotenv import load_dotenv
 from langchain_pinecone import PineconeVectorStore
+from langchain_huggingface import HuggingFaceEmbeddings
 from pinecone import Pinecone
-from backend.app.core.config import settings
 
-# Configurações
-INDEX_NAME = "bibliagpt-index"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+load_dotenv()
 
-@lru_cache(maxsize=1)
-def get_embeddings():
-    """Carrega o modelo de embeddings (Cacheado na memória RAM)."""
-    return HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+# --- VARIÁVEIS DE AMBIENTE ---
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = "bibliagpt"
 
-def get_pinecone_client():
-    api_key = settings.PINECONE_API_KEY
-    if not api_key:
-        print("🚨 ERRO: PINECONE_API_KEY não encontrada.")
-        return None
-    return Pinecone(api_key=api_key)
+print("⏳ Carregando modelos de Embedding no servidor...")
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_kwargs={'device': 'cpu'} # Garante uso apenas de CPU no Render
+)
+print("✅ Modelos carregados com sucesso!")
 
-def get_retriever(namespace):
-    """Conecta ao Pinecone e retorna o buscador."""
+def get_retriever():
+    """
+    Configura e retorna o recuperador (retriever) do Pinecone 
+    usando os embeddings já carregados na memória.
+    """
     try:
-        pc = get_pinecone_client()
-        if not pc: return None
+        # Inicializa o cliente Pinecone
+        pc = Pinecone(api_key=PINECONE_API_KEY)
         
-        index = pc.Index(INDEX_NAME)
-        
+        # Conecta ao Vector Store existente
         vectorstore = PineconeVectorStore(
-            index=index,
-            embedding=get_embeddings(),
-            namespace=namespace
+            index_name=PINECONE_INDEX_NAME,
+            embedding=embeddings
         )
-        return vectorstore.as_retriever()
+        
+        # Retorna o retriever configurado para buscar os 3 versículos mais relevantes
+        return vectorstore.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 3}
+        )
     except Exception as e:
-        print(f"❌ Erro Pinecone ({namespace}): {e}")
+        print(f"❌ Erro ao configurar o Retriever: {e}")
         return None
